@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Form, Button } from "react-bootstrap";
 import "./App.css";
@@ -6,27 +7,32 @@ import Paginations from "./Component/Paginations";
 
 function App() {
   const [usersData, setUsersData] = useState([]);
-  const [filteredId, setFilteredId] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchData, setSearchData] = useState("");
-  const [selectId, setSelectId] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState([]);
   const [allChecked, setAllChecked] = useState(false);
   const [modal, setModal] = useState(false);
   const [updateId, setUpdateId] = useState(null);
-  const [currentPage, setCurrentpage] = useState(1);
-  const Users_Per_Page = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+  const UsersPerPage = 10;
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    filterUsers();
+  }, [searchData, usersData]);
 
   const fetchData = async () => {
     try {
-      await fetch(
+      const response = await fetch(
         "https://geektrust.s3-ap-southeast-1.amazonaws.com/adminui-problem/members.json"
-      )
-        .then((res) => res.json())
-
-        .then((json) => {
-          setUsersData(json);
-        });
-    } catch (e) {
-      console.log(e);
+      );
+      const data = await response.json();
+      setUsersData(data);
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -35,71 +41,62 @@ function App() {
     setModal(true);
   };
 
-  const onDelete = (userId) => {
-    const updatedUsersList = usersData.filter((user) => user.id !== userId);
-    setUsersData(updatedUsersList);
+  const handleDelete = (userId) => {
+    const updatedUsers = usersData.filter((user) => user.id !== userId);
+    setUsersData(updatedUsers);
   };
 
-  const onSelect = (event) => {
+  const handleSelectRow = (event) => {
     const userId = event.target.value;
-    let updatedUsersList = [...selectId];
+    let updatedSelectedUsers = [...selectedUsers];
     if (event.target.checked) {
-      updatedUsersList = [...selectId, userId];
+      updatedSelectedUsers = [...selectedUsers, userId];
     } else {
       setAllChecked(false);
-      updatedUsersList.splice(selectId.indexOf(userId), 1);
+      updatedSelectedUsers.splice(selectedUsers.indexOf(userId), 1);
     }
-    setSelectId(updatedUsersList);
+    setSelectedUsers(updatedSelectedUsers);
   };
 
-  const onSelectAll = (event) => {
-    let updatedUsersList = [...selectId];
+  const handleSelectAll = (event) => {
+    let updatedSelectedUsers = [...selectedUsers];
     if (event.target.checked) {
       setAllChecked(true);
-      updatedUsersList = currentUser.map((user) => user.id);
+      updatedSelectedUsers = filteredUsers.map((user) => user.id);
     } else {
       setAllChecked(false);
-      updatedUsersList = [];
+      updatedSelectedUsers = [];
     }
-    setSelectId(updatedUsersList);
+    setSelectedUsers(updatedSelectedUsers);
   };
 
-  const deleteSelected = () => {
-    const updatedUsersList = usersData.filter(
-      (member) => !selectId.includes(member.id)
+  const handleDeleteSelected = () => {
+    const updatedUsers = usersData.filter(
+      (user) => !selectedUsers.includes(user.id)
     );
-    setUsersData(updatedUsersList);
+    setUsersData(updatedUsers);
     setAllChecked(false);
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const filter = () => {
+  const filterUsers = () => {
     if (searchData !== "") {
-      const result = usersData.filter((obj) =>
-        Object.keys(obj).some((key) => obj[key].includes(searchData))
+      const result = usersData.filter((user) =>
+        Object.values(user).some((value) =>
+          value.toLowerCase().includes(searchData.toLowerCase())
+        )
       );
-      setFilteredId(result);
+      setFilteredUsers(result);
     } else {
-      setFilteredId(usersData);
+      setFilteredUsers(usersData);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const lastIndex = currentPage * UsersPerPage;
+  const firstIndex = lastIndex - UsersPerPage;
+  const currentUser = filteredUsers.slice(firstIndex, lastIndex);
+  const totalPages = Math.ceil(filteredUsers.length / UsersPerPage);
 
-  useEffect(() => {
-    filter();
-  }, [filter, usersData]);
-
-  // Pagination
-
-  const lastIndex = currentPage * Users_Per_Page;
-  const firstIndex = lastIndex - Users_Per_Page;
-  const currentUser = filteredId.slice(firstIndex, lastIndex);
-  const totalPages = Math.ceil(filteredId.length / Users_Per_Page);
-
-  const setPage = (pageNumber) => setCurrentpage(pageNumber);
+  const setPage = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
     <div className="container">
@@ -116,7 +113,7 @@ function App() {
             <th>
               <Form.Check
                 type="checkbox"
-                onChange={onSelectAll}
+                onChange={handleSelectAll}
                 checked={allChecked}
               />
             </th>
@@ -128,51 +125,16 @@ function App() {
         </thead>
         <tbody>
           {currentUser.length ? (
-            currentUser
-              .filter((user) => {
-                if (searchData === "") return user;
-                else if (
-                  user.name.includes(searchData) ||
-                  user.email.includes(searchData) ||
-                  user.role.includes(searchData)
-                ) {
-                  return user;
-                }
-              })
-
-              .map((user) => {
-                return (
-                  <tr key={user.id}>
-                    <th scope="row">
-                      <Form.Check
-                        type="checkbox"
-                        value={user.id}
-                        onChange={onSelect}
-                        checked={selectId.includes(user.id)}
-                      />
-                    </th>
-                    <td>{user.name}</td>
-                    <td>{user.email}</td>
-                    <td>{user.role}</td>
-                    <td>
-                      <Button
-                        variant="link"
-                        size="sm"
-                        onClick={() => updateUser(user.id)}
-                      >
-                        <i className="bi bi-pencil-square text-dark"></i>
-                      </Button>
-                      <Button
-                        variant="link"
-                        size="sm"
-                        onClick={() => onDelete(user.id)}
-                      >
-                        <i className="bi bi-trash text-danger"></i>
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              })
+            currentUser.map((user) => (
+              <UserRow
+                key={user.id}
+                user={user}
+                selected={selectedUsers.includes(user.id)}
+                handleSelectRow={handleSelectRow}
+                updateUser={updateUser}
+                handleDelete={handleDelete}
+              />
+            ))
           ) : (
             <tr>
               <td colSpan={5} className="text-center text-muted">
@@ -183,15 +145,15 @@ function App() {
         </tbody>
       </table>
 
-      {currentUser.length > 0 ? (
+      {currentUser.length > 0 && (
         <>
           <Button
             variant="danger"
             size="sm"
-            onClick={deleteSelected}
-            disabled={selectId.length > 0 ? false : true}
+            onClick={handleDeleteSelected}
+            disabled={selectedUsers.length === 0}
           >
-            Delect Selected
+            Delete Selected
           </Button>
           <Paginations
             currentPage={currentPage}
@@ -199,10 +161,9 @@ function App() {
             totalPages={totalPages}
           />
         </>
-      ) : (
-        ""
       )}
-      {modal ? (
+
+      {modal && (
         <UpdateUser
           usersData={usersData}
           setUsersData={setUsersData}
@@ -211,10 +172,34 @@ function App() {
           show={modal}
           onHide={() => setModal(false)}
         />
-      ) : (
-        ""
       )}
     </div>
+  );
+}
+
+function UserRow({ user, selected, handleSelectRow, updateUser, handleDelete }) {
+  return (
+    <tr>
+      <th scope="row">
+        <Form.Check
+          type="checkbox"
+          value={user.id}
+          onChange={handleSelectRow}
+          checked={selected}
+        />
+      </th>
+      <td>{user.name}</td>
+      <td>{user.email}</td>
+      <td>{user.role}</td>
+      <td>
+        <Button variant="link" size="sm" onClick={() => updateUser(user.id)}>
+          <i className="bi bi-pencil-square text-dark"></i>
+        </Button>
+        <Button variant="link" size="sm" onClick={() => handleDelete(user.id)}>
+          <i className="bi bi-trash text-danger"></i>
+        </Button>
+      </td>
+    </tr>
   );
 }
 
