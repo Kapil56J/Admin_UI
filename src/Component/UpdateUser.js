@@ -1,8 +1,8 @@
+import React, { useState } from "react";
 import { Modal, Form, Button } from "react-bootstrap";
-import { useState } from "react";
 
-function UpdateUser({usersData,setUsersData,userId, setModal , ...props }) {
-    const userToUpdate = usersData.find((user) => user.id === userId);
+function UpdateUser({ usersData, setUsersData, userId, setModal, ...props }) {
+  const userToUpdate = usersData.find((user) => user.id === userId);
 
   const [formValue, setFormValue] = useState({
     email: userToUpdate.email,
@@ -10,77 +10,70 @@ function UpdateUser({usersData,setUsersData,userId, setModal , ...props }) {
     role: userToUpdate.role,
   });
 
-  const changeHandler = (event) => {
+  const handleChange = (event) => {
     const { id, value } = event.target;
-    setFormValue((prevState) => {
-      return {
-        ...prevState,
-        [id]: value,
-      };
-    });
+    setFormValue((prevState) => ({
+      ...prevState,
+      [id]: value,
+    }));
   };
-  const { email, name, role } = formValue;
 
-  const submitHandler = () => {
-    const updatedList = usersData.map((item) => {
-      if (item.id === userId) {
-        return { ...item, ...formValue };
-      }
-      return item;
-    });
+  const handleSubmit = () => {
+    const updatedList = usersData.map((item) =>
+      item.id === userId ? { ...item, ...formValue } : item
+    );
     setUsersData(updatedList);
     setModal(false);
   };
 
+  const { email, name, role } = formValue;
+
   return (
     <div>
-        <Modal {...props} size="sm" centered>
-      <Modal.Body>
-        <Form>
-          <Form.Group className="mb-3">
-            <Form.Control
-              type="email"
-              id="email"
-              placeholder="Email Address"
-              onChange={changeHandler}
-              value={email}
-              autoFocus
-            />
-          </Form.Group>
-          <Form.Group className="mb-3">
-            <Form.Control
-              type="text"
-              id="name"
-              placeholder="Name"
-              onChange={changeHandler}
-              value={name}
-            />
-          </Form.Group>
-
-          <Form.Group className="mb-3">
-            <Form.Control
-              type="text"
-              id="role"
-              placeholder="Role"
-              onChange={changeHandler}
-              value={role}
-            />
-          </Form.Group>
-        </Form>
-      </Modal.Body>
-      <Modal.Footer>
-        <Button variant="light" onClick={() => setModal(false)}>
-          Close
-        </Button>
-        <Button variant="primary" onClick={submitHandler}>
-          Update
-        </Button>
-      </Modal.Footer>
-    </Modal>
-  
-
+      <Modal {...props} size="sm" centered>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Control
+                type="email"
+                id="email"
+                placeholder="Email Address"
+                onChange={handleChange}
+                value={email}
+                autoFocus
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Control
+                type="text"
+                id="name"
+                placeholder="Name"
+                onChange={handleChange}
+                value={name}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Control
+                type="text"
+                id="role"
+                placeholder="Role"
+                onChange={handleChange}
+                value={role}
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="light" onClick={() => setModal(false)}>
+            Close
+          </Button>
+          <Button variant="primary" onClick={handleSubmit}>
+            Update
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
-  )
+  );
 }
 
-export default UpdateUser
+export default UpdateUser;
